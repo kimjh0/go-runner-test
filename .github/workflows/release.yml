@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          dnf install -y git gcc make tar gzip
+          dnf install -y git gcc make tar gzip zip
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
         run: |
           chmod +x go-runner-test
           tar cvfz go-runner-test-${{ github.event.release.tag_name }}.tar.gz go-runner-test
-          zip go-runner-test-${{ github.event.release.tag_name }}.zip go-runner-test || true
+          zip go-runner-test-${{ github.event.release.tag_name }}.zip go-runner-test
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
