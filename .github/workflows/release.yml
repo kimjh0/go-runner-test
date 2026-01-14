@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+env:
+  GO_VERSION: "1.24"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:8
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf install -y git gcc make tar gzip
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build
+        run: make
+
+      - name: Create release artifacts
+        run: |
+          chmod +x go-runner-test
+          tar cvfz go-runner-test-${{ github.event.release.tag_name }}.tar.gz go-runner-test
+          zip go-runner-test-${{ github.event.release.tag_name }}.zip go-runner-test || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            go-runner-test-${{ github.event.release.tag_name }}.tar.gz
+            go-runner-test-${{ github.event.release.tag_name }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            go-runner-test-${{ github.event.release.tag_name }}.tar.gz \
+            go-runner-test-${{ github.event.release.tag_name }}.zip \
+            --clobber \
+            --repo ${{ github.repository }}
